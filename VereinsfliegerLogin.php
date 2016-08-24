@@ -12,7 +12,7 @@
 class VereinsfliegerLogin {
 
     static $instance = false;
-    var $prefix = 'sll_';
+    var $prefix = 'vfl_';
     var $settings = array();
     var $vereinsfliegerRest;
     var $network_version = null;
@@ -198,9 +198,13 @@ class VereinsfliegerLogin {
         $auth_result = $this->vereinsfliegerRest->SignIn($username, $password);
 
         if ($auth_result) {
-            $user = get_user_by('login', $username);
+            $result = $this->vereinsfliegerRest->GetUser();
+            if (!isset($result['uid'])) {
+                return $this->auth_error("{$this->prefix}login_error", __('<strong>Vereinsflieger Login Error</strong>: Vereinsflieger credentials are correct, but there is no user id given in response.'));
+            }
+            $user = get_user_by('login', $result['uid']);
 
-            if (!$user || ( strtolower($user->user_login) !== strtolower($username) )) {
+            if (!$user || ( strtolower($user->user_login) != $result['uid'] )) {
                 if (!str_true($this->get_setting('create_users'))) {
                     do_action('wp_login_failed', $username);
                     return $this->auth_error('invalid_username', __('<strong>Vereinsflieger Login Error</strong>: Vereinsflieger credentials are correct, but there is no matching WordPress user and user creation is not enabled.'));
@@ -231,17 +235,6 @@ class VereinsfliegerLogin {
         return false;
     }
 
-    function get_domain_username($username) {
-        // Format username with domain prefix, if login_domain is set
-        $login_domain = $this->get_setting('login_domain');
-
-        if (!empty($login_domain)) {
-            return $login_domain . '\\' . $username;
-        }
-
-        return $username;
-    }
-
     /**
      * Prevent modification of the error message by other authenticate hooks
      * before it is shown to the user
@@ -258,7 +251,7 @@ class VereinsfliegerLogin {
     function get_user_data($username) {
         $user_data = array(
             'user_pass' => md5(microtime()),
-            'user_login' => $username,
+            'user_login' => '',
             'user_nicename' => '',
             'user_email' => '',
             'display_name' => '',
@@ -270,6 +263,7 @@ class VereinsfliegerLogin {
         $result = $this->vereinsfliegerRest->GetUser();
 
         if (is_array($result)) {
+            $user_data['user_login'] = $result['uid'];
             $user_data['user_nicename'] = $result['firstname'] . '-' . $result['lastname'];
             $user_data['user_email'] = $result['email'];
             $user_data['display_name'] = $result['firstname'] . ' ' . $result['lastname'];
