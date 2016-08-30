@@ -1,5 +1,4 @@
 <?php
-
 /*
   Plugin Name: Vereinsflieger Login
   Plugin URI:
@@ -17,6 +16,7 @@ class VereinsfliegerLogin {
     var $vereinsfliegerRest;
     var $network_version = null;
     var $version = "01";
+    var $fix_user_meta = array();
 
     public function __construct() {
 
@@ -25,7 +25,11 @@ class VereinsfliegerLogin {
         require_once( plugin_dir_path(__FILE__) . "/includes/VereinsfliegerRestInterface.php" );
         $this->vereinsfliegerRest = new VereinsfliegerRestInterface();
 
+        $this->fix_user_meta[] = array('uid', $this->prefix . 'uid');
+
         add_action('admin_init', array($this, 'save_settings'));
+        add_action('show_user_profile', array($this, 'extra_profile_fields'));
+        add_action('edit_user_profile', array($this, 'extra_profile_fields'));
 
         if ($this->is_network_version()) {
             add_action('network_admin_menu', array($this, 'menu'));
@@ -33,9 +37,14 @@ class VereinsfliegerLogin {
             add_action('admin_menu', array($this, 'menu'));
         }
 
-
         if (str_true($this->get_setting('enabled'))) {
-            add_filter('authenticate', array($this, 'authenticate'), 1, 3);
+            $i = 10;
+            if ('first' === $this->get_setting('order')) {
+                $i = 1;
+            } else if ('last' === $this->get_setting('order')) {
+                $i = 100;
+            }
+            add_filter('authenticate', array($this, 'authenticate'), $i, 3);
         }
 
         register_activation_hook(__FILE__, array($this, 'activate'));
@@ -60,6 +69,14 @@ class VereinsfliegerLogin {
         $this->add_setting('use_tls', "false");
         $this->add_setting('create_users', "true");
         $this->add_setting('enabled', "false");
+        $this->add_setting('order', 'first');
+        $this->add_setting('compare_wp', "login");
+        $this->add_setting('compare_vfl', "uid");
+        $this->add_setting('user_login', "uid");
+        $this->add_setting('user_nicename', "first_lastname");
+        $this->add_setting('user_display_name', "first_lastname");
+
+        $this->add_setting('user_meta_data', array());
     }
 
     function upgrade_settings() {
@@ -78,6 +95,22 @@ class VereinsfliegerLogin {
 
     function admin_page() {
         include 'VereinsfliegerLogin-Admin.php';
+    }
+
+    function extra_profile_fields($user) {
+        ?>
+        <h3>Meta Data from <code>Vereinsflieger.de</code></h3>
+        <table class="form-table">
+            <tr>
+                <th><label for="vfl_uid">UID</label></th>
+                <td>
+                    <input type="text" name="vfl_uid" id="vfl_uid" value="<?php echo esc_attr(get_user_meta($user->ID, 'vfl_uid', true)); ?>" class="regular-text" /><br />
+                    <span class="description"><code>Vereinsflieger.de</code> User ID</span>
+                </td>
+            </tr>
+
+        </table>
+        <?php
     }
 
     function get_settings_obj() {
@@ -106,8 +139,14 @@ class VereinsfliegerLogin {
     }
 
     function get_setting($option = false) {
-        if ($option === false || !isset($this->settings[$option]))
+        if ($option === false || !isset($this->settings[$option])) {
             return false;
+        }
+
+        if ('user_meta_data' === $option) {
+            $result = array_merge($this->settings[$option], $this->fix_user_meta);
+            return apply_filters($this->prefix . 'get_setting', $result, $option);
+        }
 
         return apply_filters($this->prefix . 'get_setting', $this->settings[$option], $option);
     }
@@ -202,19 +241,24 @@ class VereinsfliegerLogin {
             if (!isset($result['uid'])) {
                 return $this->auth_error("{$this->prefix}login_error", __('<strong>Vereinsflieger Login Error</strong>: Vereinsflieger credentials are correct, but there is no user id given in response.'));
             }
-            $user = get_user_by('login', $result['uid']);
+            $user = get_user_by($this->get_setting('compare_wp'), $result[$this->get_setting('compare_vfl')]);
 
-            if (!$user || ( strtolower($user->user_login) != $result['uid'] )) {
+            //if (!$user || ( strtolower($user->user_login) != $result['uid'] )) {
+            if (!$user) {
                 if (!str_true($this->get_setting('create_users'))) {
                     do_action('wp_login_failed', $username);
                     return $this->auth_error('invalid_username', __('<strong>Vereinsflieger Login Error</strong>: Vereinsflieger credentials are correct, but there is no matching WordPress user and user creation is not enabled.'));
                 }
 
-                $this->get_user_data($username);
-
                 $new_user = wp_insert_user($this->get_user_data($username));
 
                 if (!is_wp_error($new_user)) {
+                    // Add user meta data
+                    $user_meta_data = $this->get_user_meta_data($username);
+                    foreach ($user_meta_data as $meta_key => $meta_value) {
+                        add_user_meta($new_user, $meta_key, $meta_value);
+                    }
+
                     // Successful Login
                     $new_user = new WP_User($new_user);
                     do_action_ref_array($this->prefix . 'auth_success', array($new_user));
@@ -225,6 +269,15 @@ class VereinsfliegerLogin {
                     return $this->auth_error("{$this->prefix}login_error", __('<strong>Vereinsflieger Login Error</strong>: Vereinsflieger credentials are correct and user creation is allowed but an error occurred creating the user in WordPress. Actual error: ' . $new_user->get_error_message()));
                 }
             } else {
+                $search_keys = array_keys($this->get_setting('user_meta_data'));
+                $all_keys = array_keys(get_user_meta($user->ID));
+                if (count(array_intersect($search_keys, $all_keys)) !== count($search_keys)) {
+                    // Add missing user meta data
+                    $user_meta_data = $this->get_user_meta_data($username);
+                    foreach ($user_meta_data as $meta_key => $meta_value) {
+                        add_user_meta($user->ID, $meta_key, $meta_value);
+                    }
+                }
                 return new WP_User($user->ID);
             }
         } elseif (str_true($this->get_setting('high_security'))) {
@@ -251,7 +304,7 @@ class VereinsfliegerLogin {
     function get_user_data($username) {
         $user_data = array(
             'user_pass' => md5(microtime()),
-            'user_login' => '',
+            'user_login' => $username,
             'user_nicename' => '',
             'user_email' => '',
             'display_name' => '',
@@ -263,15 +316,39 @@ class VereinsfliegerLogin {
         $result = $this->vereinsfliegerRest->GetUser();
 
         if (is_array($result)) {
-            $user_data['user_login'] = $result['uid'];
-            $user_data['user_nicename'] = $result['firstname'] . '-' . $result['lastname'];
+            $user_login = $this->get_setting('user_login');
+            if (!in_array($user_login, ['uid', 'memberid', 'email'], true)) {
+                $user_login = 'uid';
+            }
+            $user_data['user_login'] = $result[$user_login];
+            $user_nicename = $this->get_setting('user_nicename');
+            if (in_array($user_nicename, ['firstname', 'lastname', 'email'], true)) {
+                $user_data['user_nicename'] = $result[$user_nicename];
+            } else if ('first_lastname' === $user_nicename) {
+                $user_data['user_nicename'] = $result['firstname'] . '-' . $result['lastname'];
+            }
             $user_data['user_email'] = $result['email'];
-            $user_data['display_name'] = $result['firstname'] . ' ' . $result['lastname'];
+            $user_display_name = $this->get_setting('user_display_name');
+            if (in_array($user_display_name, ['firstname', 'lastname', 'email'], true)) {
+                $user_data['display_name'] = $result[$user_display_name];
+            } else if ('first_lastname' === $user_display_name) {
+                $user_data['display_name'] = $result['firstname'] . ' ' . $result['lastname'];
+            }
             $user_data['first_name'] = $result['firstname'];
             $user_data['last_name'] = $result['lastname'];
         }
 
         return apply_filters($this->prefix . 'user_data', $user_data);
+    }
+
+    function get_user_meta_data($username) {
+        $userinfo = $this->vereinsfliegerRest->GetUser();
+        $user_meta_data = array();
+        foreach ($this->get_setting('user_meta_data') as $attr) {
+            $user_meta_data[$attr[1]] = $userinfo[$attr[0]];
+        }
+
+        return apply_filters($this->prefix . 'user_meta_data', $user_meta_data);
     }
 
     /**
