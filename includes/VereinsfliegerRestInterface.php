@@ -2,7 +2,7 @@
 class VereinsfliegerRestInterface
 {
 	private $InterfaceUrl = 'https://www.vereinsflieger.de/interface/rest/';
-	private $AccessToken;
+	private $AccessToken = null;
 	private $HttpStatusCode = 0;
 	private $aResponse = array();
 	
@@ -205,6 +205,29 @@ class VereinsfliegerRestInterface
 	public function SetInterfaceUrl($InterfaceUrl)
 	{
 		return $this->InterfaceUrl = $InterfaceUrl;
+	}
+        
+        //=============================================================================================
+	// GetAccessToken
+	//=============================================================================================
+	public function GetAccessToken()
+	{
+            return $this->AccessToken;
+	}
+        
+        //=============================================================================================
+	// SetAccessToken
+	//=============================================================================================
+	public function SetAccessToken($AccessToken)
+	{
+            if (null !== $this->AccessToken) {
+                if ($this->AccessToken !== $AccessToken) {
+                        $this->SignOut();
+                } else {
+                    return 0;
+                }
+            }
+            return $this->AccessToken = $AccessToken;
 	}
 
 }

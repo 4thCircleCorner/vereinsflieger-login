@@ -37,6 +37,11 @@ class VereinsfliegerLogin {
             add_action('admin_menu', array($this, 'menu'));
         }
 
+        //register my own site by parameter index.php?<PARAM>
+        add_action('init', array($this, 'vfl_init_internal'));
+        add_filter('query_vars', array($this, 'vfl_query_vars'));
+        add_action('parse_request', array($this, 'vfl_parse_request'));
+
         if (str_true($this->get_setting('enabled'))) {
             $i = 10;
             if ('first' === $this->get_setting('order')) {
@@ -83,6 +88,24 @@ class VereinsfliegerLogin {
         
     }
 
+    public static function vfl_init_internal() {
+        add_rewrite_rule('VfL-API.php$', 'index.php?vfl_api', 'top');
+    }
+
+    public static function vfl_query_vars($query_vars) {
+        $query_vars[] = 'vfl_api';
+        return $query_vars;
+    }
+
+    public function vfl_parse_request(&$wp) {
+        if (isset($wp->query_vars['vfl_api']) ||
+                array_key_exists('vfl_api', $wp->query_vars)) {
+            include dirname(__FILE__) . '/VfL-API.php';
+            exit();
+        }
+        return;
+    }
+
     function menu() {
         if ($this->is_network_version()) {
             add_submenu_page(
@@ -108,7 +131,15 @@ class VereinsfliegerLogin {
                     <span class="description"><code>Vereinsflieger.de</code> User ID</span>
                 </td>
             </tr>
-
+            <?php /*if (!is_null($this->vereinsfliegerRest)) : ?>
+                <tr>
+                    <th><label for="vfl_authtoken">Current AuthToken</label></th>
+                    <td>
+                        <input type="text" name="vfl_authtoken" id="vfl_authtoken" value="<?php echo esc_attr(); ?>" class="regular-text" disabled="disabled"/><br />
+                        <span class="description"><code>Vereinsflieger.de</code> AccessToken</span>
+                    </td>
+                </tr>
+            <?php endif;*/ ?>
         </table>
         <?php
     }
@@ -208,8 +239,9 @@ class VereinsfliegerLogin {
         // Determine if user a local admin
         $local_admin = false;
         $user_obj = get_user_by('login', $username);
-        if (user_can($user_obj, 'update_core'))
+        if (user_can($user_obj, 'update_core')) {
             $local_admin = true;
+        }
 
         //$local_admin = apply_filters('sll_force_ldap', $local_admin);
         $password = stripslashes($password);
