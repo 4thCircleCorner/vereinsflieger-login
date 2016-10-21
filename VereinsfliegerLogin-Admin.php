@@ -45,6 +45,15 @@ if (isset($_GET['tab'])) {
                             Select hook priority in Wordpress authentication process.
                         </td>
                     </tr>
+                    <tr>
+                        <th scope="row" valign="top"><code>Vereinsflieger.de</code> Integration</th>
+                        <td>
+                            <label>
+                                <input type="text" name="" value="<?php echo site_url( 'index.php?vfl_api', 'https' ); ?>" size="50" readonly="readonly" /><br/> 
+                                Use this url in <code>Vereinsflieger.de</code> to integrate under "Vereinsübersicht".
+                            </label><br/>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
             <p><input class="button-primary" type="submit" value="Save Settings" /></p>
@@ -169,7 +178,7 @@ if (isset($_GET['tab'])) {
                                             return join(':', $attr);
                                         }, $VereinsfliegerLogin->get_setting('user_meta_data')));
                                 ?></textarea><br/>
-                                Fixed meta data will be added automatically.
+                            Fixed meta data will be added automatically.
                         </td>
                     </tr>
                 </tbody>
