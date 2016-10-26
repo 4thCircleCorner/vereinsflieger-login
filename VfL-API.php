@@ -2,7 +2,11 @@
 
 header("Content-type: text/html");
 
-if (isset($_SERVER['HTTP_ORIGIN']) && $_SERVER['HTTP_ORIGIN'] === 'https://vereinsflieger.de') {
+if (isset($_SERVER['HTTP_ORIGIN'])) {
+    if ($_SERVER['HTTP_ORIGIN'] !== 'https://vereinsflieger.de' &&
+            $_SERVER['HTTP_ORIGIN'] !== 'https://www.vereinsflieger.de') {
+        die('wrong origin');
+    }
     //coming from vereinsflieger.de
     if (isset($_REQUEST['accesstoken'])) {
         //accesstoken is served
@@ -47,10 +51,8 @@ if (isset($_SERVER['HTTP_ORIGIN']) && $_SERVER['HTTP_ORIGIN'] === 'https://verei
     } else {
         die('no access token');
     }
-} else {
-    die('wrong origin');
 }
 ?>
 <?php if (is_user_logged_in) : ?>
-    
+    <img src="https://www.fliegerclub-sbk.de/webcam/?camimage=0" />
 <?php endif; ?>
