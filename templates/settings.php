@@ -17,8 +17,9 @@
                     ?>
                     <br/>
 
-                    <input name='submit' type='submit' class='button-primary' value='<?php _e("Save Changes", 'wp_vfl'); ?>' />
-                    <input name='reset_defaults' type='submit' class='button' value='<?php _e("Reset Defaults", 'wp_vfl'); ?>' />
+                    <?php submit_button(); ?>
+                    <?php /*<input name='submit' type='submit' class='button-primary' value='<?php _e("Save Changes", 'wp_vfl'); ?>' />
+                    <input name='reset_defaults' type='submit' class='button' value='<?php _e("Reset Defaults", 'wp_vfl'); ?>' /> */ ?>
                 </form>
             </div>
         </div>

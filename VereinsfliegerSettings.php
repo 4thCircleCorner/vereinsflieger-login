@@ -9,16 +9,16 @@ if (!class_exists('WP_VfL_Settings')) {
         // Default settings
         var $enabled = false;
         var $order = 'first';
-        var $high_security = false;
-        var $compare_wp = 'email';
-        var $compare_vfl = 'email';
-        var $create_users = true;
-        var $user_role = 'contributor';
-        var $user_login = 'uid';
-        var $user_nicename = 'first_lastname';
-        var $user_display_name = 'first_lastname';
-        var $user_meta_data = array();
-        var $network_version = null;
+        var $highSecurity = false;
+        var $compareWP = 'email';
+        var $compareVFL = 'email';
+        var $createUsers = true;
+        var $userRole = 'contributor';
+        var $userLogin = 'uid';
+        var $userNicename = 'first_lastname';
+        var $userDisplayName = 'first_lastname';
+        var $userMetaData = array();
+        var $networkVersion = null;
 
         function __construct($options = '') {
             $this->update($options);
@@ -72,7 +72,7 @@ if (!class_exists('WP_VfL_Settings')) {
 
     }
 
-    // End class WP_FCS_CAM_Options
+    // End class WP_VfL_Options
 
     class WP_VfL_Settings {
 
@@ -111,50 +111,14 @@ if (!class_exists('WP_VfL_Settings')) {
             add_settings_section('debug_settings', __('Debug Settings', 'wp_vfl'), array(&$this, 'debug_section'), 'wp_vfl');
         }
 
-        /**
-         * Called on load action.
-         *
-         * @return void
-         */
-        public static function load() {
-            global $wpdb;
-            die('jo');
-            if (isset($_GET['action']) && $_GET['action'] == 'wpfcscamdebug') {
-
-                //check permissions
-                check_admin_referer('wpfcscamdebug');
-
-                /* if ( ! current_user_can( 'backwpup_jobs_edit' ) )
-                  die(); */
-
-                //doing dump
-                header("Pragma: public");
-                header("Expires: 0");
-                header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
-                header("Content-Type: application/octet-stream; charset=" . get_bloginfo('charset'));
-                /* header( "Content-Disposition: attachment; filename=" . DB_NAME . ".sql;" );
-                  try {
-                  $sql_dump = new BackWPup_MySQLDump();
-                  foreach ( $sql_dump->tables_to_dump as $key => $table ) {
-                  if ( $wpdb->prefix != substr( $table,0 , strlen( $wpdb->prefix ) ) )
-                  unset( $sql_dump->tables_to_dump[ $key ] );
-                  }
-                  $sql_dump->execute();
-                  unset( $sql_dump );
-                  } catch ( Exception $e ) {
-                  die( $e->getMessage() );
-                  } */
-                echo 'test debug';
-                die();
-            }
-        }
-
         function set_options($input) {
             // If reset defaults was clicked
             if (isset($_POST['reset_defaults'])) {
-                $options = new WP_VfL_Options();
+                $this->options = new WP_VfL_Options();
                 return get_object_vars($this);
             }
+
+            return $input;
         }
 
         function set_enable() {
@@ -195,7 +159,7 @@ if (!class_exists('WP_VfL_Settings')) {
                 <p class="quick-search-wrap">
                     <input type="search" class="quick-search input-with-default-title" title="<?php esc_attr_e('Search'); ?>" value="<?php echo $searched; ?>" name="quick-search-post" />
                     <span class="spinner"></span>
-                    <?php //submit_button(__('Search'), 'button-small quick-search-submit button-secondary', 'submit', false, array('id' => 'post')); ?>
+            <?php //submit_button(__('Search'), 'button-small quick-search-submit button-secondary', 'submit', false, array('id' => 'post'));  ?>
                 </p>
             </div><!-- /.tabs-panel -->
 
@@ -206,16 +170,16 @@ if (!class_exists('WP_VfL_Settings')) {
                 <p class="quick-search-wrap">
                     <input type="search" class="quick-search input-with-default-title" title="<?php esc_attr_e('Search'); ?>" value="<?php echo $searched; ?>" name="quick-search-page" />
                     <span class="spinner"></span>
-                    <?php //submit_button(__('Search'), 'button-small quick-search-submit button-secondary', 'submit', false, array('id' => 'page')); ?>
+            <?php //submit_button(__('Search'), 'button-small quick-search-submit button-secondary', 'submit', false, array('id' => 'page'));  ?>
                 </p>
             </div><!-- /.tabs-panel -->
 
             <div id="tabs-panel-custom" class="tabs-panel <?php
             echo ( 'custom' == $current_tab ? 'tabs-panel-active' : 'tabs-panel-inactive' );
             ?>">
-                <label for="wp_vfl_options[integration][custom]"><?php echo __('Set Custom URL:','wp_vfl') ?></label>
+                <label for="wp_vfl_options[integration][custom]"><?php echo __('Set Custom URL:', 'wp_vfl') ?></label>
                 <input type="text" name="wp_vfl_options[integration][custom]" value="" size="50" /><br/>
-                <?php //submit_button(__('Search'), 'button-small quick-search-submit button-secondary', 'submit', false, array('id' => 'custom')); ?>
+            <?php //submit_button(__('Search'), 'button-small quick-search-submit button-secondary', 'submit', false, array('id' => 'custom')); ?>
             </div><!-- /.tabs-panel -->
             <?php
         }
@@ -224,26 +188,26 @@ if (!class_exists('WP_VfL_Settings')) {
             $units_wp = array('id' => __('ID', 'wp_vfl'), 'slug' => __('Slug', 'wp_vfl'), 'email' => __('E-Mail', 'wp_vfl'), 'login' => __('Login', 'wp_vfl'));
             $units_vfl = array('uid' => __('Unique ID by Vereinsflieger.de', 'wp_vfl'), 'mid' => __('Membership Number', 'wp_vfl'), 'email' => __('E-Mail', 'wp_vfl'));
             echo __('Compare wordpress user info: ', 'wp_vfl');
-            echo self::dropdown($units_wp, $this->options->compare_wp, 'wp_vfl_options[compare_wp]');
+            echo self::dropdown($units_wp, $this->options->compareWP, 'wp_vfl_options[comparewp]');
             echo __('against <code>Vereinsflieger.de</code>: ', 'wp_vfl');
-            echo self::dropdown($units_vfl, $this->options->compare_wp, 'wp_vfl_options[compare_vfl]') . '<br/>';
+            echo self::dropdown($units_vfl, $this->options->compareVFL, 'wp_vfl_options[comparevfl]') . '<br/>';
             echo __('Select which user info should by checked against <code>Vereinsflieger.de</code> authentication. <code>Vereinsflieger.de</code> authenticates with uid or email as username.', 'wp_vfl');
         }
 
         function set_highsecurity() {
-            echo self::checkbox($this->options->high_security, 'wp_vfl_options[highsecurity]');
+            echo self::checkbox($this->options->highSecurity, 'wp_vfl_options[highsecurity]');
             echo __('Force all logins to authenticate against <code>Vereinsflieger.de</code>. Do NOT fallback to default authentication for existing users.<br/>Formerly known as high security mode.', 'wp_vfl');
         }
 
         function set_createusers() {
-            echo self::checkbox($this->options->create_users, 'wp_vfl_options[createusers]');
+            echo self::checkbox($this->options->createUsers, 'wp_vfl_options[createusers]');
             echo __('Enable <code>Vereinsflieger.de</code> login authentication for WordPress. (this one is kind of important)', 'wp_vfl');
         }
 
         function set_userrole() {
             ?>
             <select name="wp_vfl_options[userrole]">
-                <?php wp_dropdown_roles(strtolower($this->options->user_role)); ?>
+            <?php wp_dropdown_roles(strtolower($this->options->userRole)); ?>
             </select>
             <?php
             //echo '<br/>...';
@@ -251,19 +215,19 @@ if (!class_exists('WP_VfL_Settings')) {
 
         function set_userlogin() {
             $units = array('uid' => __('Unique ID by Vereinsflieger.de', 'wp_vfl'), 'mid' => __('Membership Number', 'wp_vfl'), 'lastname' => __('Lastname', 'wp_vfl'), 'email' => __('E-Mail', 'wp_vfl'));
-            echo self::dropdown($units, $this->options->user_login, 'wp_vfl_options[userlogin]');
+            echo self::dropdown($units, $this->options->userLogin, 'wp_vfl_options[userlogin]');
             //echo '<br/>...';
         }
 
         function set_usernickname() {
             $units = array('firstname' => __('[Firstname]', 'wp_vfl'), 'lastname' => __('[Lastname]', 'wp_vfl'), 'email' => __('[E-Mail]', 'wp_vfl'), 'first_lastname' => __('[Firstname]-[Lastname]', 'wp_vfl'));
-            echo self::dropdown($units, $this->options->user_nicename, 'wp_vfl_options[usernickname]');
+            echo self::dropdown($units, $this->options->userNicename, 'wp_vfl_options[usernickname]');
             //echo '<br/>...';
         }
 
         function set_userdisplayname() {
             $units = array('firstname' => __('[Firstname]', 'wp_vfl'), 'lastname' => __('[Lastname]', 'wp_vfl'), 'email' => __('[E-Mail]', 'wp_vfl'), 'first_lastname' => __('[Firstname] [Lastname]', 'wp_vfl'));
-            echo self::dropdown($units, $this->options->user_display_name, 'wp_vfl_options[userdisplayname]');
+            echo self::dropdown($units, $this->options->userDisplayName, 'wp_vfl_options[userdisplayname]');
             //echo '<br/>...';
         }
 
@@ -442,7 +406,7 @@ if (!class_exists('WP_VfL_Settings')) {
             foreach ((array) $arr as $key => $values) {
                 $key = esc_attr($key);
                 $data = esc_attr($values['data']);
-                $html .= "<div style='display:inline-block;margin-right:10px;'><label><input type='radio' $name value='$key' data-target='$data' " . checked($checked, $key, false) . "/> ".$values['name']."</label></div>";
+                $html .= "<div style='display:inline-block;margin-right:10px;'><label><input type='radio' $name value='$key' data-target='$data' " . checked($checked, $key, false) . "/> " . $values['name'] . "</label></div>";
             }
             return $html;
         }
@@ -506,5 +470,5 @@ if (!class_exists('WP_VfL_Settings')) {
 
     }
 
-    // END class WP_FCS_CAM_Settings
-} // END if(!class_exists('WP_FCS_CAM_Settings'))
+    // END class WP_VfL_Settings
+} // END if(!class_exists('WP_VfL_Settings'))
