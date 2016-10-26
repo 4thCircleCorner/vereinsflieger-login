@@ -3,7 +3,7 @@
   Plugin Name: Vereinsflieger Login
   Plugin URI:
   Description:  Authenticate WordPress against Vereinsflieger.de.
-  Version: 0.1
+  Version: 0.1.2
   Author:
   Author URI:
  */
@@ -15,7 +15,7 @@ class VereinsfliegerLogin {
     var $settings = array();
     var $vereinsfliegerRest;
     var $network_version = null;
-    var $version = "01";
+    var $version = "012";
     var $fix_user_meta = array();
 
     public function __construct() {
@@ -75,8 +75,8 @@ class VereinsfliegerLogin {
         $this->add_setting('create_users', "true");
         $this->add_setting('enabled', "false");
         $this->add_setting('order', 'first');
-        $this->add_setting('compare_wp', "login");
-        $this->add_setting('compare_vfl', "uid");
+        $this->add_setting('compare_wp', "email");
+        $this->add_setting('compare_vfl', "email");
         $this->add_setting('user_login', "uid");
         $this->add_setting('user_nicename', "first_lastname");
         $this->add_setting('user_display_name', "first_lastname");
