@@ -11,7 +11,7 @@
 
 if (!class_exists('WP_VfL')) {
 
-    require_once(sprintf("%s/settings.php", dirname(__FILE__)));
+    require_once(sprintf("%s/VereinsfliegerSettings.php", dirname(__FILE__)));
 
     class WP_VfL {
         /* static $instance = false;
