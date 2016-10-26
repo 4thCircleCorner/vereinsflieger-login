@@ -22,6 +22,8 @@ if (!class_exists('WP_VfL')) {
           var $version = "01";
           var $fix_user_meta = array(); */
 
+        const VERSION = '0.2-dev';
+        
         static $options;
         static $basename;
         static $pages;
@@ -129,7 +131,7 @@ if (!class_exists('WP_VfL')) {
               self::$options->save();
               } */
 
-            //update_option('mappress_version', self::VERSION);
+            update_option('vereinsfliegerlogin_version', self::VERSION);
         }
 
         static function register() {

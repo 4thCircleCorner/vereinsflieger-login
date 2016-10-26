@@ -54,5 +54,5 @@ if (isset($_SERVER['HTTP_ORIGIN'])) {
 }
 ?>
 <?php if (is_user_logged_in) : ?>
-    <img src="https://www.fliegerclub-sbk.de/webcam/?camimage=0" />
+    
 <?php endif; ?>
