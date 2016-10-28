@@ -6,6 +6,10 @@ if (isset($_GET['tab'])) {
 } else {
     $active_tab = 'simple';
 }
+
+function joinbycolon($attr) {
+    return join(':', $attr);
+}
 ?>
 <div class="wrap">
 
@@ -155,9 +159,7 @@ if (isset($_GET['tab'])) {
                         <th scope="row" valign="top">Fixed Meta data</th>
                         <td>
                             <textarea disabled="disabled"><?php
-                                echo join("\n", array_map(function ($attr) {
-                                            return join(':', $attr);
-                                        }, $VereinsfliegerLogin->fix_user_meta));
+                                echo join("\n", array_map('joinbycolon', $VereinsfliegerLogin->fix_user_meta));
                                 ?></textarea>
                         </td>
                     </tr>
@@ -165,9 +167,7 @@ if (isset($_GET['tab'])) {
                         <th scope="row" valign="top">All/Combined Meta data</th>
                         <td>
                             <textarea name="<?php echo $this->get_field_name('user_meta_data'); ?>"><?php
-                                echo join("\n", array_map(function ($attr) {
-                                            return join(':', $attr);
-                                        }, $VereinsfliegerLogin->get_setting('user_meta_data')));
+                                echo join("\n", array_map('joinbycolon', $VereinsfliegerLogin->get_setting('user_meta_data')));
                                 ?></textarea><br/>
                             Fixed meta data will be added automatically.
                         </td>

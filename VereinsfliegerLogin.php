@@ -55,7 +55,7 @@ class VereinsfliegerLogin {
         register_activation_hook(__FILE__, array($this, 'activate'));
 
         // If version is false, and old version detected, run activation
-        if ($this->get_setting('version') === false || $this->get_setting('version') != $version) {
+        if ($this->get_setting('version') === false || $this->get_setting('version') != $this->version) {
             $this->upgrade_settings();
         }
     }
@@ -131,15 +131,15 @@ class VereinsfliegerLogin {
                     <span class="description"><code>Vereinsflieger.de</code> User ID</span>
                 </td>
             </tr>
-            <?php /*if (!is_null($this->vereinsfliegerRest)) : ?>
-                <tr>
-                    <th><label for="vfl_authtoken">Current AuthToken</label></th>
-                    <td>
-                        <input type="text" name="vfl_authtoken" id="vfl_authtoken" value="<?php echo esc_attr(); ?>" class="regular-text" disabled="disabled"/><br />
-                        <span class="description"><code>Vereinsflieger.de</code> AccessToken</span>
-                    </td>
-                </tr>
-            <?php endif;*/ ?>
+            <?php /* if (!is_null($this->vereinsfliegerRest)) : ?>
+              <tr>
+              <th><label for="vfl_authtoken">Current AuthToken</label></th>
+              <td>
+              <input type="text" name="vfl_authtoken" id="vfl_authtoken" value="<?php echo esc_attr(); ?>" class="regular-text" disabled="disabled"/><br />
+              <span class="description"><code>Vereinsflieger.de</code> AccessToken</span>
+              </td>
+              </tr>
+              <?php endif; */ ?>
         </table>
         <?php
     }
@@ -160,9 +160,10 @@ class VereinsfliegerLogin {
         }
     }
 
-    function set_setting($option = false, $newvalue) {
-        if ($option === false)
+    function set_setting($option = false, $newvalue = false) {
+        if ($option === false) {
             return false;
+        }
 
         $this->settings = $this->get_settings_obj($this->prefix);
         $this->settings[$option] = $newvalue;
@@ -182,18 +183,28 @@ class VereinsfliegerLogin {
         return apply_filters($this->prefix . 'get_setting', $this->settings[$option], $option);
     }
 
-    function add_setting($option = false, $newvalue) {
-        if ($option === false)
+    function add_setting($option = false, $newvalue = false) {
+        if ($option === false) {
             return false;
+        }
 
         if (!isset($this->settings[$option])) {
             return $this->set_setting($option, $newvalue);
-        } else
+        } else {
             return false;
+        }
     }
 
     function get_field_name($setting, $type = 'string') {
         return "{$this->prefix}setting[$setting][$type]";
+    }
+
+    function splitbycolon($attr) {
+        return explode(':', $attr);
+    }
+
+    function udiffCompare($a, $b) {
+        return (array_diff($a,$b)) ? 1 : 0;
     }
 
     function save_settings() {
@@ -203,10 +214,10 @@ class VereinsfliegerLogin {
             foreach ($new_settings as $setting_name => $setting_value) {
                 foreach ($setting_value as $type => $value) {
                     if ($setting_name == 'user_meta_data') {
-                        $this->set_setting($setting_name, array_map(function ($attr) {
-                                    return explode(':', $attr);
-                                }, array_filter(preg_split('/\r\n|\n|\r|;/', $value))));
-                    } elseif ($type == "array") {
+                        $new_value = array_map(array($this, 'splitbycolon'), array_filter(preg_split('/\r\n|\n|\r|;/', $value)));
+                        $arrdiff = array_udiff($new_value, $this->fix_user_meta, array($this, 'udiffCompare'));
+                        $this->set_setting($setting_name, $arrdiff);
+                    } else if ($type == "array") {
                         $this->set_setting($setting_name, explode(";", $value));
                     } else {
                         $this->set_setting($setting_name, $value);
@@ -251,11 +262,13 @@ class VereinsfliegerLogin {
         if (empty($username) || empty($password)) {
             $error = new WP_Error();
 
-            if (empty($username))
+            if (empty($username)) {
                 $error->add('empty_username', __('<strong>ERROR</strong>: The username field is empty.'));
+            }
 
-            if (empty($password))
+            if (empty($password)) {
                 $error->add('empty_password', __('<strong>ERROR</strong>: The password field is empty.'));
+            }
 
             return $error;
         }
@@ -345,23 +358,27 @@ class VereinsfliegerLogin {
             'role' => $this->get_setting('role')
         );
 
+        $allowed_user_login = array('uid', 'memberid', 'email');
+        $allowed_user_nicename = array('firstname', 'lastname', 'email');
+        //allowed_user_display_name same as $allowed_user_nicename
+
         $result = $this->vereinsfliegerRest->GetUser();
 
         if (is_array($result)) {
             $user_login = $this->get_setting('user_login');
-            if (!in_array($user_login, ['uid', 'memberid', 'email'], true)) {
+            if (!in_array($user_login, $allowed_user_login, true)) {
                 $user_login = 'uid';
             }
             $user_data['user_login'] = $result[$user_login];
             $user_nicename = $this->get_setting('user_nicename');
-            if (in_array($user_nicename, ['firstname', 'lastname', 'email'], true)) {
+            if (in_array($user_nicename, $allowed_user_nicename, true)) {
                 $user_data['user_nicename'] = $result[$user_nicename];
             } else if ('first_lastname' === $user_nicename) {
                 $user_data['user_nicename'] = $result['firstname'] . '-' . $result['lastname'];
             }
             $user_data['user_email'] = $result['email'];
             $user_display_name = $this->get_setting('user_display_name');
-            if (in_array($user_display_name, ['firstname', 'lastname', 'email'], true)) {
+            if (in_array($user_display_name, $allowed_user_nicename, true)) {
                 $user_data['display_name'] = $result[$user_display_name];
             } else if ('first_lastname' === $user_display_name) {
                 $user_data['display_name'] = $result['firstname'] . ' ' . $result['lastname'];
@@ -373,11 +390,13 @@ class VereinsfliegerLogin {
         return apply_filters($this->prefix . 'user_data', $user_data);
     }
 
-    function get_user_meta_data($username) {
+    function get_user_meta_data() {
         $userinfo = $this->vereinsfliegerRest->GetUser();
         $user_meta_data = array();
         foreach ($this->get_setting('user_meta_data') as $attr) {
-            $user_meta_data[$attr[1]] = $userinfo[$attr[0]];
+            if (isset($userinfo[$attr[0]])) {
+                $user_meta_data[$attr[1]] = $userinfo[$attr[0]];
+            }
         }
 
         return apply_filters($this->prefix . 'user_meta_data', $user_meta_data);
@@ -425,10 +444,12 @@ if (!function_exists('str_true')) {
      * @return boolean The boolean value of the provided text
      * */
     function str_true($string, $istrue = array('yes', 'y', 'true', '1', 'on', 'open')) {
-        if (is_array($string))
+        if (is_array($string)) {
             return false;
-        if (is_bool($string))
+        }
+        if (is_bool($string)) {
             return $string;
+        }
         return in_array(strtolower($string), $istrue);
     }
 
