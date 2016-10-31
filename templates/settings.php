@@ -64,7 +64,7 @@
                 'menu': $('#menu').val(),
                 'menu-settings-column-nonce': $('#menu-settings-column-nonce').val(),
                 'q': q,
-                'type': input.attr('name')
+                'type': input.attr('name').match('quick-search-(.*)')[1]
             };
 
             $('.spinner', panel).show();
@@ -118,6 +118,7 @@
             });
 
             $('.categorychecklist', panel).html($items);
+            console.log($items);
             $('.spinner', panel).hide();
         }
 
@@ -145,9 +146,11 @@
                     e.preventDefault();*/
         
         panelId = target.data('target');
-        wrapper = target.parents('.postbox').first();
+        wrapper = target.parents('.tabs-panel').first();
         $('.tabs-panel-active', wrapper).removeClass('tabs-panel-active').addClass('tabs-panel-inactive');
         $('#' + panelId, wrapper).removeClass('tabs-panel-inactive').addClass('tabs-panel-active');        
+        $('.categorychecklist', wrapper).html('');
+        $('.quick-search', wrapper).val('');
         e.preventDefault();
                /*} else if (target.hasClass('select-all')) {
                     selectAreaMatch = /#(.*)$/.exec(e.target.href);

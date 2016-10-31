@@ -3,7 +3,7 @@
   Plugin Name: Vereinsflieger Login
   Plugin URI:
   Description:  Authenticate WordPress against Vereinsflieger.de.
-  Version: 0.2
+  Version: 0.2-dev
   Author:
   Author URI:
   License: GPL2
@@ -23,7 +23,7 @@ if (!class_exists('WP_VfL')) {
           var $fix_user_meta = array(); */
 
         const VERSION = '0.2-dev';
-        
+
         static $options;
         static $basename;
         static $pages;
@@ -102,7 +102,18 @@ if (!class_exists('WP_VfL')) {
          * Activate the plugin
          */
         public static function activate() {
-            
+            $options = WP_VfL_Options::get();
+            $showonfront = get_option('show_on_front');
+            if ('page' === $showonfront) {
+                $options->update(
+                        array('integrationType' => 'page',
+                            'integrationTarget' => get_option('page_on_front')));
+            } else {
+                $options->update(
+                        array('integrationType' => 'custom',
+                            'integrationTarget' => get_home_url()));
+            }
+            $options->save();
         }
 
         // END public static function activate
@@ -203,22 +214,24 @@ if (!class_exists('WP_VfL')) {
             return;
         }
 
-        function ajax_search($request = array()) {
+        function ajax_search() {
             check_ajax_referer('my-special-string', 'security');
-            //require_once(ABSPATH . 'wp-admin/includes/nav-menu.php');
+            $type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+            $search = filter_input(INPUT_POST, 'q', FILTER_SANITIZE_STRING);
             query_posts(array(
                 'posts_per_page' => 10,
-                'post_type' => 'page',
-                's' => isset($request['q']) ? $request['q'] : '',
+                'post_type' => (string) $type,
+                's' => (string) $search,
             ));
             if (!have_posts()) {
                 wp_die();
             }
             while (have_posts()) {
                 the_post();
-                /* $var_by_ref = get_the_ID();                
-                  echo walk_nav_menu_tree(array_map('wp_setup_nav_menu_item', array(get_post($var_by_ref))), 0, array()); */
-                echo wp_json_encode(
+
+                $var_by_ref = get_the_ID();                
+                echo walk_nav_menu_tree(array_map('wp_setup_nav_menu_item', array(get_post($var_by_ref))), 0, array());
+                /*echo wp_json_encode(
                         array(
                             'ID' => get_the_ID(),
                             'post_title' => get_the_title(),
@@ -226,7 +239,7 @@ if (!class_exists('WP_VfL')) {
                             'post_type' => get_post_type(),
                         )
                 );
-                echo "\n";
+                echo "\n";*/
             }
             wp_die();
         }

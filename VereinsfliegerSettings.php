@@ -19,6 +19,8 @@ if (!class_exists('WP_VfL_Settings')) {
         var $userDisplayName = 'first_lastname';
         var $userMetaData = array();
         var $networkVersion = null;
+        var $integrationType = 'page';
+        var $integrationTarget = null;
 
         function __construct($options = '') {
             $this->update($options);
@@ -150,37 +152,48 @@ if (!class_exists('WP_VfL_Settings')) {
               $labels[$name] = $type->label;
               }
               var_dump($labels); */
-            echo self::radio($labels, $this->options->postTypes, "wp_vfl_options[integration]");
             ?>
-            <div id="tabs-panel-post-search" class="tabs-panel <?php
-            echo ( 'post' == $current_tab ? 'tabs-panel-active' : 'tabs-panel-inactive' );
-            ?>">
-                Currently selected: 
-                <p class="quick-search-wrap">
-                    <input type="search" class="quick-search input-with-default-title" title="<?php esc_attr_e('Search'); ?>" value="<?php echo $searched; ?>" name="quick-search-post" />
-                    <span class="spinner"></span>
-            <?php //submit_button(__('Search'), 'button-small quick-search-submit button-secondary', 'submit', false, array('id' => 'post'));  ?>
-                </p>
-            </div><!-- /.tabs-panel -->
+            <div class="tabs-panel">
+                <?php
+                echo self::radio($labels, $this->options->integrationType, "wp_vfl_options[integration]");
+                ?>
+                <div id="tabs-panel-post-search" class="tabs-panel <?php
+                echo ( 'post' == $this->options->integrationType ? 'tabs-panel-active' : 'tabs-panel-inactive' );
+                ?>">
+                    Currently selected: none
+                    <p class="quick-search-wrap">
+                        <input type="search" class="quick-search" title="<?php esc_attr_e('Search'); ?>" value="" name="quick-search-post" />
+                        <span class="spinner"></span>
+                        <?php //submit_button(__('Search'), 'button-small quick-search-submit button-secondary', 'submit', false, array('id' => 'post'));  ?>
+                    </p>
+                </div><!-- /.tabs-panel -->
 
-            <div id="tabs-panel-page-search" class="tabs-panel <?php
-            echo ( 'page' == $current_tab ? 'tabs-panel-active' : 'tabs-panel-inactive' );
-            ?>">
-                Currently selected: 
-                <p class="quick-search-wrap">
-                    <input type="search" class="quick-search input-with-default-title" title="<?php esc_attr_e('Search'); ?>" value="<?php echo $searched; ?>" name="quick-search-page" />
-                    <span class="spinner"></span>
-            <?php //submit_button(__('Search'), 'button-small quick-search-submit button-secondary', 'submit', false, array('id' => 'page'));  ?>
-                </p>
-            </div><!-- /.tabs-panel -->
+                <div id="tabs-panel-page-search" class="tabs-panel <?php
+                echo ( 'page' == $this->options->integrationType ? 'tabs-panel-active' : 'tabs-panel-inactive' );
+                ?>">
+                         <?php if ('page' == $this->options->integrationType) : ?>
+                             <?php $page = get_post($this->options->integrationTarget); ?>
+                        Currently selected: <a href="<?php echo get_the_permalink($page); ?>" title="<?php echo esc_attr(strip_tags(get_the_title($page))); ?>"><?php echo get_the_title($page); ?></a>
+                    <?php else : ?>
+                        Currently selected: none
+                    <?php endif; ?>
+                    <p class="quick-search-wrap">
+                        <input type="search" class="quick-search" title="<?php esc_attr_e('Search'); ?>" value="" name="quick-search-page" />
+                        <span class="spinner"></span>
+                        <?php //submit_button(__('Search'), 'button-small quick-search-submit button-secondary', 'submit', false, array('id' => 'page'));  ?>
+                    </p>
+                </div><!-- /.tabs-panel -->
 
-            <div id="tabs-panel-custom" class="tabs-panel <?php
-            echo ( 'custom' == $current_tab ? 'tabs-panel-active' : 'tabs-panel-inactive' );
-            ?>">
-                <label for="wp_vfl_options[integration][custom]"><?php echo __('Set Custom URL:', 'wp_vfl') ?></label>
-                <input type="text" name="wp_vfl_options[integration][custom]" value="" size="50" /><br/>
-            <?php //submit_button(__('Search'), 'button-small quick-search-submit button-secondary', 'submit', false, array('id' => 'custom')); ?>
-            </div><!-- /.tabs-panel -->
+                <div id="tabs-panel-custom" class="tabs-panel <?php
+                echo ( 'custom' == $this->options->integrationType ? 'tabs-panel-active' : 'tabs-panel-inactive' );
+                ?>">
+                    <label for="wp_vfl_options[integration][custom]"><?php echo __('Set Custom URL:', 'wp_vfl') ?></label>
+                    <input type="text" name="wp_vfl_options[integration][custom]" value="<?php esc_attr_e($this->options->integrationTarget); ?>" size="50" /><br/>
+                    <?php //submit_button(__('Search'), 'button-small quick-search-submit button-secondary', 'submit', false, array('id' => 'custom')); ?>
+                </div><!-- /.tabs-panel -->
+
+                <ul id="post-search-checklist" data-wp-lists="list:post" class="categorychecklist form-no-clear"></ul>
+            </div>
             <?php
         }
 
@@ -207,7 +220,7 @@ if (!class_exists('WP_VfL_Settings')) {
         function set_userrole() {
             ?>
             <select name="wp_vfl_options[userrole]">
-            <?php wp_dropdown_roles(strtolower($this->options->userRole)); ?>
+                <?php wp_dropdown_roles(strtolower($this->options->userRole)); ?>
             </select>
             <?php
             //echo '<br/>...';
