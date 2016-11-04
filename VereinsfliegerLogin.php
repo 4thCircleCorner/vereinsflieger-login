@@ -3,7 +3,7 @@
   Plugin Name: Vereinsflieger Login
   Plugin URI:
   Description:  Authenticate WordPress against Vereinsflieger.de.
-  Version: 0.1.2
+  Version: 0.1.3
   Author:
   Author URI:
  */
@@ -80,8 +80,8 @@ class VereinsfliegerLogin {
         $this->add_setting('user_login', "uid");
         $this->add_setting('user_nicename', "first_lastname");
         $this->add_setting('user_display_name', "first_lastname");
-
         $this->add_setting('user_meta_data', array());
+        $this->add_setting('clubid', 0);
     }
 
     function upgrade_settings() {
@@ -204,7 +204,7 @@ class VereinsfliegerLogin {
     }
 
     function udiffCompare($a, $b) {
-        return (array_diff($a,$b)) ? 1 : 0;
+        return (array_diff($a, $b)) ? 1 : 0;
     }
 
     function save_settings() {
@@ -213,7 +213,12 @@ class VereinsfliegerLogin {
 
             foreach ($new_settings as $setting_name => $setting_value) {
                 foreach ($setting_value as $type => $value) {
-                    if ($setting_name == 'user_meta_data') {
+                    if ($setting_name == 'clubid') {
+                        if (!is_numeric($value) || ($value < 0)) {
+                            continue;
+                        }
+                        $this->set_setting($setting_name, $value);
+                    } else if ($setting_name == 'user_meta_data') {
                         $new_value = array_map(array($this, 'splitbycolon'), array_filter(preg_split('/\r\n|\n|\r|;/', $value)));
                         $arrdiff = array_udiff($new_value, $this->fix_user_meta, array($this, 'udiffCompare'));
                         $this->set_setting($setting_name, $arrdiff);
@@ -278,8 +283,10 @@ class VereinsfliegerLogin {
             remove_filter('authenticate', 'wp_authenticate_username_password', 20, 3);
         }
 
+        $cid = $this->get_setting('clubid');
+
         // Sweet, let's try to authenticate our user and pass
-        $auth_result = $this->vereinsfliegerRest->SignIn($username, $password);
+        $auth_result = $this->vereinsfliegerRest->SignIn($username, $password, $cid);
 
         if ($auth_result) {
             $result = $this->vereinsfliegerRest->GetUser();

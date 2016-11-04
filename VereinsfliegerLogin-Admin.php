@@ -39,6 +39,13 @@ function joinbycolon($attr) {
                         </td>
                     </tr>
                     <tr>
+                        <th scope="row" valign="top">Set Club-ID used by <code>Vereinsflieger.de</code></th>
+                        <td>
+                            <input type="hidden" name="<?php echo $this->get_field_name('clubid'); ?>" value="false" />
+                            <label><input type="number" name="<?php echo $this->get_field_name('clubid'); ?>" value="<?php echo $this->get_setting('clubid')?>" />Restrict <code>Vereinsflieger.de</code> login to only specified club by CID.<br/>Club-ID (CID) can be found under "Administration" -> "Vereinsdaten" -> "Kurzname": CID XX</label><br/>
+                        </td>
+                    </tr>
+                    <tr>
                         <th scope="row" valign="top">Authentication Order</th>
                         <td>
                             <select name="<?php echo $this->get_field_name('order'); ?>">
